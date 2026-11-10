@@ -1,0 +1,15 @@
+{
+  "name": "design-review",
+  "description": "Template DRS 시험 키트. 빈 플러그인(0.0.x)이며 판정 기능이 없습니다. 슬라이드 외 형식은 아직 지원하지 않습니다.",
+  "owner": {
+    "name": "jjang20"
+  },
+  "plugins": [
+    {
+      "name": "design-review",
+      "source": "./plugin",
+      "description": "설치 · 설정 · 점검만 하는 빈 플러그인(0.0.x). 어떤 디자인도 판정하지 않으며, 슬라이드 외 형식은 아직 지원 범위가 아닙니다.",
+      "version": "0.0.2"
+    }
+  ]
+}

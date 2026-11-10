@@ -1,0 +1,194 @@
+<title>DRS 검수 대시보드</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one narrow column — worker status band on top, then the request queue, then nothing else (the test-kit page makes no outside call and stores no free text). */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --fg: #1b1f27; --muted: #5d6573; --line: #dde1e8;
+  --accent: #2f5bd3; --on-accent: #ffffff;
+  --ok: #18794e; --ok-bg: #e3f4ea; --warn: #a15c00; --warn-bg: #fdf0dc; --bad: #b42318; --bad-bg: #fde7e5;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12151b; --surface: #1a1e26; --fg: #e7eaf0; --muted: #9aa3b2; --line: #2c323d;
+  --accent: #7d9cf0; --on-accent: #0d1118;
+  --ok: #5cc794; --ok-bg: #173327; --warn: #f0b45c; --warn-bg: #3a2b14; --bad: #f2867b; --bad-bg: #3d1c19; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12151b; --surface: #1a1e26; --fg: #e7eaf0; --muted: #9aa3b2; --line: #2c323d;
+  --accent: #7d9cf0; --on-accent: #0d1118;
+  --ok: #5cc794; --ok-bg: #173327; --warn: #f0b45c; --warn-bg: #3a2b14; --bad: #f2867b; --bad-bg: #3d1c19; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+main { max-width: 720px; margin: 0 auto; display: grid; gap: 24px; }
+h1 { font-size: 22px; font-weight: 600; margin: 0; text-wrap: balance; }
+h2 { font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0; }
+p { margin: 0; }
+.sub { color: var(--muted); font-size: 14px; }
+header { display: grid; gap: 6px; }
+section { display: grid; gap: 12px; }
+.band { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.band .meta { flex: 1 1 240px; min-width: 0; display: grid; gap: 2px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; padding: 4px 12px; border-radius: 999px; }
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.on { color: var(--ok); background: var(--ok-bg); }
+.off { color: var(--bad); background: var(--bad-bg); }
+.wait { color: var(--warn); background: var(--warn-bg); }
+.mono { font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+form { display: flex; gap: 8px; flex-wrap: wrap; }
+button { font: inherit; font-weight: 500; border: 0; border-radius: 8px; padding: 8px 16px; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+li { border-bottom: 1px solid var(--line); padding: 12px 0; display: grid; grid-template-columns: 88px 1fr; gap: 4px 12px; }
+li .body { min-width: 0; display: grid; gap: 2px; }
+li .result { overflow-wrap: anywhere; }
+.chip { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; justify-self: start; align-self: start; }
+.queued { color: var(--warn); background: var(--warn-bg); }
+.running { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.done { color: var(--ok); background: var(--ok-bg); }
+.failed { color: var(--bad); background: var(--bad-bg); }
+.empty { color: var(--muted); padding: 16px 0; border-bottom: 1px solid var(--line); }
+dl { margin: 0; display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 6px 12px; }
+dt { color: var(--muted); }
+dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.note { color: var(--muted); font-size: 13px; }
+</style>
+
+<main>
+  <header>
+    <h1>DRS 검수 대시보드</h1>
+    <p class="sub">플러그인 0.0.2 · 빈 대기열 점검판. 판정 기능은 아직 없고, 요청이 작업자에게 갔다가 돌아오는지만 봅니다. 이 화면은 바깥 주소를 부르지 않고, 입력한 글을 저장하지 않습니다.</p>
+  </header>
+
+  <section aria-labelledby="h-worker">
+    <h2 id="h-worker">작업자</h2>
+    <div class="band">
+      <span id="worker-pill" class="pill wait">확인 중</span>
+      <div class="meta">
+        <p id="worker-line">작업자 신호를 불러오는 중입니다.</p>
+        <p id="worker-detail" class="note mono"></p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-queue">
+    <h2 id="h-queue">대기열</h2>
+    <form id="req-form">
+      <button id="req-send" type="submit" disabled>빈 요청 보내기 (고정 문장)</button>
+    </form>
+    <p id="req-note" class="note">작업자가 꺼져 있어도 요청은 대기열에 쌓이고, 작업자가 켜지면 차례로 처리됩니다.</p>
+    <ol id="req-list"><li class="empty" style="display:block">아직 요청이 없습니다. 위에서 첫 요청을 보내 보세요.</li></ol>
+  </section>
+
+</main>
+
+<script>
+const PAGE_VERSION = "0.0.2";
+const $ = (id) => document.getElementById(id);
+let db = null, worker = null;
+
+function ago(iso) {
+  const s = Math.round((Date.now() - Date.parse(iso)) / 1000);
+  if (!isFinite(s)) return "알 수 없음";
+  if (s < 60) return `${Math.max(s, 0)}초 전`;
+  if (s < 3600) return `${Math.round(s / 60)}분 전`;
+  if (s < 86400) return `${Math.round(s / 3600)}시간 전`;
+  return `${Math.round(s / 86400)}일 전`;
+}
+
+// Online = the last heartbeat is younger than two intervals plus a minute of slack.
+function renderWorker() {
+  const pill = $("worker-pill");
+  if (!worker) {
+    pill.className = "pill off"; pill.textContent = "오프라인";
+    $("worker-line").textContent = "작업자가 아직 한 번도 신호를 보내지 않았습니다. Claude에서 drs-worker를 실행하세요.";
+    $("worker-detail").textContent = "";
+    return;
+  }
+  const interval = Number(worker.interval_s) || 300;
+  const age = (Date.now() - Date.parse(worker.last_beat)) / 1000;
+  const online = age <= interval * 2 + 60;
+  pill.className = "pill " + (online ? "on" : "off");
+  pill.textContent = online ? "온라인" : "오프라인";
+  $("worker-line").textContent = online
+    ? `작업자가 켜져 있습니다. 마지막 신호 ${ago(worker.last_beat)}.`
+    : `작업자 신호가 끊겼습니다 (마지막 ${ago(worker.last_beat)}). 새 요청은 대기열에서 기다립니다.`;
+  $("worker-detail").textContent =
+    `plugin ${worker.plugin_version || "?"} · engine ${worker.engine_version || "?"} · 신호 간격 ${interval}s · ${worker.state || ""}`;
+}
+
+const STATUS_KO = { queued: "대기", running: "처리 중", done: "완료", failed: "실패" };
+function renderRequests(docs) {
+  const list = $("req-list");
+  list.textContent = "";
+  if (!docs.length) {
+    const li = document.createElement("li");
+    li.className = "empty"; li.style.display = "block";
+    li.textContent = "아직 요청이 없습니다. 위에서 첫 요청을 보내 보세요.";
+    list.append(li); return;
+  }
+  for (const d of docs) {
+    const r = d.data() || {};
+    const li = document.createElement("li");
+    const chip = document.createElement("span");
+    const st = STATUS_KO[r.status] ? r.status : "queued";
+    chip.className = "chip " + st; chip.textContent = STATUS_KO[st];
+    const body = document.createElement("div"); body.className = "body";
+    const head = document.createElement("p"); head.className = "mono";
+    head.textContent = `${r.type || "?"} · ${d.id} · 보냄 ${r.created_at ? ago(r.created_at) : "?"}`;
+    body.append(head);
+    if (r.payload && r.payload.echo) {
+      const q = document.createElement("p"); q.textContent = `보낸 문장: ${r.payload.echo}`; body.append(q);
+    }
+    if (r.result) {
+      const res = document.createElement("p"); res.className = "result";
+      res.textContent = r.result.ok
+        ? `${r.result.summary || "완료"} 돌려받은 문장: “${r.result.echo || ""}”`
+        : `실패: ${r.result.error || "알 수 없는 오류"}`;
+      body.append(res);
+      if (r.created_at && r.finished_at) {
+        const t = document.createElement("p"); t.className = "note mono";
+        t.textContent = `왕복 ${Math.round((Date.parse(r.finished_at) - Date.parse(r.created_at)) / 1000)}초 · ${r.result.engine_version || ""}`;
+        body.append(t);
+      }
+    }
+    li.append(chip, body); list.append(li);
+  }
+}
+
+async function start() {
+  db = await claude.use("db");
+  if (!db) {
+    $("worker-pill").className = "pill off"; $("worker-pill").textContent = "연결 안 됨";
+    $("worker-line").textContent = "이 화면에서 데이터 저장소를 쓸 수 없습니다. 로그인한 claude.ai에서 여세요.";
+    $("req-note").textContent = "저장소가 없어 요청을 보낼 수 없습니다.";
+    return;
+  }
+  $("req-send").disabled = false;
+  const slow = setTimeout(() => { $("worker-line").textContent = "저장소 응답이 늦습니다. 잠시 뒤 다시 확인합니다."; }, 10000);
+  db.doc("worker/status").onSnapshot((s) => {
+    if (!s.metadata.fromCache) clearTimeout(slow);
+    worker = s.exists ? s.data() : null; renderWorker();
+  }, () => { clearTimeout(slow); worker = null; renderWorker(); });
+  setInterval(renderWorker, 15000);
+  db.collection("requests").orderBy("created_at", "desc").limit(20)
+    .onSnapshot((q) => renderRequests(q.docs), (e) => { $("req-note").textContent = `대기열을 읽지 못했습니다 (${e.code}).`; });
+
+  $("req-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const btn = $("req-send"); btn.disabled = true;
+    const id = "r-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
+    try {
+      await db.collection("requests").doc(id).set({
+        type: "ping", status: "queued", created_at: new Date().toISOString(),
+        created_by: "dashboard", payload: { echo: "첫 왕복" },
+      });
+      $("req-note").textContent = "요청을 대기열에 넣었습니다. 작업자가 처리하면 아래 목록이 바뀝니다.";
+    } catch (e) {
+      $("req-note").textContent = `요청을 넣지 못했습니다 (${e.code}). 이 화면에 쓰기 권한이 있는지 확인하세요.`;
+    } finally { btn.disabled = false; }
+  });
+
+}
+start();
+</script>

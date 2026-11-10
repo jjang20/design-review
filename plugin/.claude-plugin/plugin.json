@@ -1,0 +1,6 @@
+{
+  "name": "design-review",
+  "version": "0.0.2",
+  "description": "Template DRS test kit (S0-4): an empty 0.0.x plugin with setup and check skills. It does not judge any design yet.",
+  "author": { "name": "jjang20" }
+}
