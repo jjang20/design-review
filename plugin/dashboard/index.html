@@ -57,7 +57,7 @@ dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 <main>
   <header>
     <h1>DRS 검수 대시보드</h1>
-    <p class="sub">플러그인 0.0.2 · 빈 대기열 점검판. 판정 기능은 아직 없고, 요청이 작업자에게 갔다가 돌아오는지만 봅니다. 이 화면은 바깥 주소를 부르지 않고, 입력한 글을 저장하지 않습니다.</p>
+    <p class="sub">플러그인 0.0.3 · 빈 대기열 점검판. 판정 기능은 아직 없고, 요청이 작업자에게 갔다가 돌아오는지만 봅니다. 이 화면은 바깥 주소를 부르지 않고, 입력한 글을 저장하지 않습니다.</p>
   </header>
 
   <section aria-labelledby="h-worker">
@@ -83,7 +83,7 @@ dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 </main>
 
 <script>
-const PAGE_VERSION = "0.0.2";
+const PAGE_VERSION = "0.0.3";
 const $ = (id) => document.getElementById(id);
 let db = null, worker = null;
 
@@ -101,7 +101,7 @@ function renderWorker() {
   const pill = $("worker-pill");
   if (!worker) {
     pill.className = "pill off"; pill.textContent = "오프라인";
-    $("worker-line").textContent = "작업자가 아직 한 번도 신호를 보내지 않았습니다. Claude에서 drs-worker를 실행하세요.";
+    $("worker-line").textContent = "작업자가 아직 한 번도 신호를 보내지 않았습니다. Claude에서 /design-review:design-review를 실행하세요.";
     $("worker-detail").textContent = "";
     return;
   }
